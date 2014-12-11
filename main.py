@@ -369,6 +369,7 @@ def window_seg(w, h, offsetx, offsety, tri, simplex_map):
 				seg_map[y,x] = core_id
 	return seg_map
 
+# All in one
 def main(pts, text_points, debug=False, window=None):
 	mp, K, tri = build_map(pts,debug)
 	print "Built map!"

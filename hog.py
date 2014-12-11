@@ -1,8 +1,13 @@
+# hog.py
+# Code for computing histogram of oriented gradients
+# about every point of a matrix
+# Used in read_im.py for text detection
+
 import numpy as np
 from scipy import signal
 from params import *
 
-# convolve with DoG
+# Derivative of Gaussian
 def DoG(sigma):
 	w = 2*np.floor(np.ceil(7*sigma)/2) + 1
 	w = int(w)
@@ -12,13 +17,14 @@ def DoG(sigma):
 	Dy = -yy*f
 	return Dx, Dy
 
-Dx, Dy = DoG(2.)
-
+# Filters by DoG to get gradients
 def filter_window(window):
+	Dx, Dy = DoG(2.)
 	xnew = signal.convolve2d(window, Dx, mode='same')
 	ynew = signal.convolve2d(window, Dy, mode='same')
 	return xnew, ynew
 
+# Computes magnitudes of gradients
 def get_magnitudes(window, xnew=None, ynew=None):
 	if xnew == None or ynew == None:
 		xnew, ynew = filter_window(window)
@@ -27,8 +33,10 @@ def get_magnitudes(window, xnew=None, ynew=None):
 	magnitudes[magnitudes<thres] = 0
 	return magnitudes
 
+# Computes histograms of oriented gradients for every point in window
 def get_hog(window, thres=thres, n_bins=n_bins, hog_size=hog_size, rand=True):
 	b = len(window); a = len(window[0,:])
+	# Compute HoG for single point
 	def hog_hist(x,y, n_bins, hog_size):
 		hog_rad = (hog_size - 1)/2
 		x0 = max(0,x-hog_rad); x1 = min(b,x+hog_rad+1); xs = range(x0,x1)
@@ -39,7 +47,9 @@ def get_hog(window, thres=thres, n_bins=n_bins, hog_size=hog_size, rand=True):
 		bins_patch = ((orien_patch / 360. * n_bins) % n_bins).astype(int)
 		mag_patch = magnitudes[yy,xx]
 		return [len(bins_patch[(bins_patch == i) & (mag_patch != 0)]) for i in range(n_bins)]
+	# Get gradients
 	xnew, ynew = filter_window(window)
+	# Get magnitudes
 	magnitudes = get_magnitudes(window, xnew, ynew)
 	# Compute orientations of all gradient vectors
 	orientations = np.arctan(ynew/xnew)/np.pi*180
@@ -51,14 +61,3 @@ def get_hog(window, thres=thres, n_bins=n_bins, hog_size=hog_size, rand=True):
 		for j in range(a):
 			hog[i,j,:] = hog_hist(i,j, n_bins, hog_size)
 	return hog
-
-# intensities = np.zeros((b,a))
-# for i in range(b):
-# 	print i
-# 	for j in range(a):
-# 		intensities[i,j] = sum(hog[i,j,:] > 0)
-
-# test_intensities = copy.copy(intensities)
-# test_intensities[(intensities<5) | (magnitudes == 0)] = 0
-# plt.imshow(test_intensities, cmap='gray'); plt.show()
-

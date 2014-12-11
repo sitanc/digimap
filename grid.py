@@ -1,7 +1,13 @@
+# grid.py
+# Code for testing our segmentation algorithm
+# Generates noisy square grids
+
 from random import *
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Samples 'size' points from w x w grid
+# with noise of size 'radius'
 def grid(w, radius, size):
 	points = []
 	xs = []
@@ -25,6 +31,10 @@ def grid(w, radius, size):
 	plt.show()
 	return np.array(points)
 
+# Creates grid of points sampled along lattice points
+# as in pixels in an image
+# NOTE: used this to show that segmentation doesn't work if
+# we don't add some random noise to points first
 def grid_int(h,w,scale):
 	points = []
 	xs = []

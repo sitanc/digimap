@@ -1,3 +1,8 @@
+# read_im.py
+# Text detection/removal, local-to-global reconstruction algorithm
+# and driver code for obtaining an actual segmentation matrix
+# given an image and coordinates
+
 import Image
 import random
 import numpy as np
@@ -174,15 +179,23 @@ def loc_to_glob(all_colors):
 	# Pastes patch at row r and column c into final matrix
 	def paste_in(patch, r, c, thres,overlap):
 		h,w = np.shape(patch)
+		# In grid of windows, get 'row' I and 'column' J
 		I = int((r - rs[0])/(W*overlap))
 		J = int((c - cs[0])/(W*overlap))
+		# Get colors in patch
 		values2 = values(patch)
+		# rgx and rgy will be x-range and y-range for how much
+		# of patch to paste into the canvas, and where
 		rgx = (0,int((1+overlap)/2.*W))
 		rgy = (0,int((1+overlap)/2.*W))
 		new_patch = copy.copy(patch)
+		# If not touching top boundary, patch has a neighbor above it
 		if I > 0:
+			# segmentation matrix of window above current one
 			top = all_colors[J,I-1]
+			# Colors in that segmentation matrix
 			values_top = values(top)
+			# if two colors "intersect" a lot, they must be the same region
 			intersects_top12, intersects_top21 = count_intersect(top, patch, 'v')
 			for i in values_top:
 				for j in values2:
@@ -190,11 +203,13 @@ def loc_to_glob(all_colors):
 					rat2 = intersects_top21[j][i] / float(sum(intersects_top21[j].values()))
 					print rat1, rat2
 					if rat1 > thres and rat2 > thres:
+						# If we've found a match, consolidate colors
 						new_patch[patch == j] = i
 			if I == len(rs) - 1:
 				rgy = (int((1-overlap)/2*W),W)
 			else:
 				rgy = (int((1-overlap)/2*W),int((1+overlap)/2*W))
+		# Same as above, but for the case that this window has a neighbor on the left
 		if J > 0:
 			left = all_colors[J-1,I]
 			values_left = values(left)
@@ -209,33 +224,42 @@ def loc_to_glob(all_colors):
 				rgx = (int((1-overlap)/2*W),W)
 			else:
 				rgx = (int((1-overlap)/2*W),int((1+overlap)/2*W))
+		# paste patch into the canvas!
 		canvas[r-rs[0]+rgy[0]:r-rs[0]+rgy[1],c-cs[0]+rgx[0]:c-cs[0]+rgx[1]] = new_patch[rgy[0]:rgy[1],rgx[0]:rgx[1]]
-		# plt.imshow(canvas); plt.show()
+		# update all_colors to have new_patch instead of patch
 		all_colors[J,I] = new_patch
-	canvas = np.zeros((2*W, 2*W))
+	# Start with blank canvas
+	canvas = np.zeros(W + (len(rs)-1)*W*overlap, W + (len(cs)-1)*W*overlap))
+	# Paste patches one by one
 	for i in range(len(cs)):
 		for j in range(len(rs)):
 			patch = all_colors[i,j]
-			r = rs[0] + j*500*overlap
-			c = cs[0] + i*500*overlap
+			r = rs[0] + j*W*overlap
+			c = cs[0] + i*W*overlap
 			paste_in(patch, r, c, 0.7, overlap)
 	plt.imshow(canvas); plt.show()
 	return canvas
 
-# Input: coordinates, output: segmentation
+# Main function: Input: corners of windows, output: segmentation
 def process(cs,rs):
-	# master is the collection of segmentation matrices for all windows
-	master = np.zeros((len(cs),len(rs),500,500))
+	# master is the collection of (uncolored) segmentation matrices for all windows
+	master = np.zeros((len(cs),len(rs),W,W))
 	for i, c in enumerate(cs):
 		for j, r in enumerate(rs):
+			# For each window, clear text, obtain segmentation matrix
 			window = get_window(x, c, r)
 			new_window, points, is_text = erase(window,c,r,efficient=str(i) + str(j))
 			m, cores, simplex_map, tri = main.main(points, None)
 			seg_map = main.window_seg(W,W,c,r,tri,simplex_map)
 			master[i,j] = seg_map
 	master_copy = copy.copy(master)
+	# "Color" the segmentation matrices by mapping regions to unique random colors
 	palette = 1000*np.random.random((len(cs),len(rs),np.max(master_copy)+2))
 	all_colors = np.zeros(np.shape(master_copy))
+	for i in range(len(cs)):
+		for j in range(len(rs)):
+			all_colors[i,j] = palette[i,j,master_copy[i,j].astype(int) + 1]
+	# Apply local-to-global reconstruction to get final segmentation matrix
 	return loc_to_glob(all_colors)
 
 # # Coordinates corresponding to map.jpg

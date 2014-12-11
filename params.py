@@ -1,4 +1,4 @@
-# Threshold for gradient vector magnitude
+# Threshold for gradient vector magnitude in hog.py
 thres = 30
 # Number of bins for hog
 n_bins = 16
@@ -6,7 +6,7 @@ n_bins = 16
 hog_size = 9
 # Width of window for local segmentation
 W = 500
-# Threshold for gradient magnitude
+# Threshold for gradient magnitude in read_im.py
 mag_thres = 90
 # Histogram must have at least 8 nonempty buckets to be text
 n = 8

@@ -1,3 +1,7 @@
+# ocr.py
+# INCOMPLETE code for computing persistent homology
+# of filtered tangent complex
+
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from numpy import linalg
@@ -115,7 +119,6 @@ def barcode(nodes, edges):
 				if T[i] == []:
 					break
 				q = T_coeffs[i][i]
-
 
 	simplices = []
 	for node in nodes:

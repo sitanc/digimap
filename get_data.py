@@ -1,3 +1,7 @@
+# get_data.py
+# Retrieves and processes training data from
+# www.public.asu.edu/~bli24/icassp2013.html
+
 import os
 import hog
 import Image
@@ -11,12 +15,16 @@ ids = []
 for name in os.listdir('DataSet/UpdatedGtMask'):
 	ids.append(name[:name.find('_')])
 
+# name for file with labels
 def mask_file(i):
 	return 'DataSet/UpdatedGtMask/'+i+'_updatedgtmask.png'
 
+# name for file with pixels
 def im_file(i):
 	return 'DataSet/FloormapImages/'+i+'.jpg'
 
+# converts image to matrix
+# if mask is true, converts image to bitmask
 def extract_mat(im, mask=False):
 	im_mat = im.load()
 	w, h = im.size
@@ -32,6 +40,8 @@ def extract_mat(im, mask=False):
 				mat[x,y] = im_mat[x,y]
 	return mat
 
+# Processes raw training data
+# Creates HoG features for each image
 def main():
 	for i in ids[15:]:
 		if os.path.getsize(mask_file(i)) < 4000:
@@ -48,8 +58,9 @@ def main():
 				json.dump(hg.tolist(), f)
 			print i+" hog written"
 
-
-
+# Organizes files written by main() into
+# a file of all HoG features of images and a file of binary
+# labels of those images as text or not
 def compile_all():
 	all_labels = []
 	all_hogs = np.zeros((0,n_bins))
